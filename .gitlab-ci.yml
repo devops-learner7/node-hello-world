@@ -1,0 +1,29 @@
+variables:
+    DOCKER_IMAGE_NAME: "hello"
+
+docker-build:
+  image: docker:cli
+  stage: build
+  services:
+    - docker:dind
+
+  
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASS"
+  
+  script:
+  - docker build -t "$DOCKER_IMAGE_NAME:$CI_PIPELINE_ID" .
+  - docker save "$DOCKER_IMAGE_NAME:$CI_PIPELINE_ID" > "$DOCKER_IMAGE_NAME-$CI_PIPELINE_ID.tar"
+  - docker tag "$DOCKER_IMAGE_NAME:$CI_PIPELINE_ID" "suraen/$DOCKER_IMAGE_NAME:$CI_PIPELINE_ID"
+  - docker push "suraen/$DOCKER_IMAGE_NAME:$CI_PIPELINE_ID"
+
+  artifacts:
+    paths:
+      - "$DOCKER_IMAGE_NAME-$CI_PIPELINE_ID.tar"
+    when: on_success
+    
+    expire_in: 30 days
+  # Run this job in a branch where a Dockerfile exists
+  rules:
+    - exists:
+        - Dockerfile
